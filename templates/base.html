@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Safety Alerts Dashboard{% endblock %} - Women's Safety Device</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="{{ url_for('dashboard') }}" class="brand-link">
+        <span class="brand-icon">🛡️</span>
+        <span>Women's Safety Portal</span>
+      </a>
+      <div class="nav-actions">
+        {% if session.get('logged_in') %}
+          <span class="user-pill">👤 {{ session.get('username', 'Parent / Guardian') }}</span>
+          <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">Log Out</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Messages -->
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}" role="alert">
+              <span>{{ message }}</span>
+              <button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-weight:bold;">&times;</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Body Content -->
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>Women's Safety Device Prototype &bull; ESP32-CAM &bull; INMP441 Microphone</p>
+      <p style="margin-top: 0.25rem;">Note: GPS hardware module is not installed in this prototype version.</p>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
