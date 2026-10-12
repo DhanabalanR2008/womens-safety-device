@@ -199,10 +199,10 @@ def upload_event():
             "error": "Missing photos: At least 1 JPG/JPEG photo is required in the 'photos' field."
         }), 400
 
-    if len(valid_photo_files) > 4:
+    if len(valid_photo_files) > 10:
         return jsonify({
             "status": "error",
-            "error": f"Too many photos: Received {len(valid_photo_files)}, maximum is 4."
+            "error": f"Too many photos: Received {len(valid_photo_files)}, maximum is 10."
         }), 400
 
     for photo in valid_photo_files:
@@ -346,9 +346,9 @@ def request_entity_too_large(error):
     if request.path.startswith("/api/"):
         return jsonify({
             "status": "error",
-            "error": "Payload too large: Combined file size exceeds 25 MB limit."
+            "error": "Payload too large: Combined file size exceeds 50 MB limit."
         }), 413
-    flash("The uploaded files exceeded the 25 MB size limit.", "danger")
+    flash("The uploaded files exceeded the 50 MB size limit.", "danger")
     return redirect(url_for("dashboard"))
 
 
