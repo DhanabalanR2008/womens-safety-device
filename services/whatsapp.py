@@ -31,7 +31,7 @@ def send_whatsapp_alert(event_id: int, device_id: str, photo_count: int, has_aud
         f"• Event ID: #{event_id}\n"
         f"• Device ID: {device_id}\n"
         f"• Photos captured: {photo_count}\n"
-        f"• Audio recorded: {'Yes (~5s WAV)' if has_audio else 'None'}\n"
+        f"• Audio recorded: {'Yes (~30s WAV)' if has_audio else 'None'}\n"
         f"• GPS Status: Not fitted / Not included in this hardware prototype\n\n"
         f"Check dashboard immediately: {Config.BASE_URL}"
     )
