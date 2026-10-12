@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Alert Feed{% endblock %}
+
+{% block content %}
+<!-- Prominent GPS Hardware Status Notice -->
+<div class="notice-banner" role="status">
+  <div class="notice-icon">🛰️</div>
+  <div>
+    <strong>Hardware Notice: GPS is not equipped in this prototype version.</strong>
+    <div>Location data is not transmitted or simulated. All alerts rely strictly on captured camera imagery and microphone audio.</div>
+  </div>
+</div>
+
+<!-- Overview Stats Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Total Emergency Alerts</div>
+    <div class="stat-value">{{ events|length }}</div>
+    <div class="stat-sub">Recorded in SQLite archive</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Storage Backend</div>
+    <div class="stat-value" style="font-size: 1.15rem;">
+      {% if cloudinary_active %}
+        <span style="color: var(--success-text);">☁️ Cloudinary (Cloud)</span>
+      {% else %}
+        <span style="color: var(--text-main);">📁 Local Disk</span>
+      {% endif %}
+    </div>
+    <div class="stat-sub">
+      {% if cloudinary_active %}
+        Persistent across server restarts
+      {% else %}
+        Stored in <code>uploads/</code> directory
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">WhatsApp Cloud Status</div>
+    <div class="stat-value" style="font-size: 1.15rem;">
+      {% if whatsapp_active %}
+        <span style="color: var(--success-text);">🟢 Active (Cloud API)</span>
+      {% else %}
+        <span style="color: var(--text-muted);">⚪ Not Configured</span>
+      {% endif %}
+    </div>
+    <div class="stat-sub">
+      {% if whatsapp_active %}
+        Recipient: {{ whatsapp_recipient }}
+      {% else %}
+        Configure in <code>.env</code> if needed
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Device Upload Endpoint</div>
+    <div class="stat-value" style="font-size: 1.05rem; word-break: break-all;">
+      <code>POST /api/events</code>
+    </div>
+    <div class="stat-sub">Secured via <code>X-Device-Token</code></div>
+  </div>
+</div>
+
+<!-- Alert Feed Section -->
+<div class="feed-header">
+  <h2 class="feed-title">Emergency Alerts (Newest First)</h2>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-sm">🔄 Refresh Feed</a>
+</div>
+
+{% if events %}
+  <div class="alerts-list">
+    {% for alert in events %}
+      <article class="alert-card" id="alert-{{ alert.id }}">
+        <!-- Card Header -->
+        <header class="alert-card-header">
+          <div class="alert-title-wrap">
+            <span class="alert-badge">ALERT #{{ alert.id }}</span>
+            <span class="alert-device">📡 {{ alert.device_id }}</span>
+            <span class="alert-timestamp">&bull; {{ alert.created_at|format_datetime }}</span>
+          </div>
+
+          <!-- Delete Action with Safe POST Confirmation -->
+          <form
+            method="POST"
+            action="{{ url_for('delete_event_route', event_id=alert.id) }}"
+            class="form-delete-alert"
+            data-alert-id="{{ alert.id }}"
+          >
+            <button type="submit" class="btn btn-danger btn-sm" title="Delete this alert and its files">
+              🗑️ Delete Alert
+            </button>
+          </form>
+        </header>
+
+        <!-- Card Body -->
+        <div class="alert-card-body">
+          <!-- Status Row -->
+          <div class="status-row">
+            <!-- GPS Unavailable Explicit Tag -->
+            <span class="tag tag-gps-unavailable" title="No GPS module on device">
+              🚫 GPS: Not Included / Unavailable
+            </span>
+
+            <!-- Storage Badge -->
+            {% if alert.storage_backend == 'cloudinary' %}
+              <span class="tag tag-whatsapp-sent" title="Stored in Cloudinary">
+                ☁️ Cloud Storage
+              </span>
+            {% else %}
+              <span class="tag tag-whatsapp-off" title="Stored on local server">
+                📁 Local Storage
+              </span>
+            {% endif %}
+
+            <!-- WhatsApp Delivery Status -->
+            {% if alert.whatsapp_status == 'sent' %}
+              <span class="tag tag-whatsapp-sent" title="{{ alert.whatsapp_detail }}">
+                ✅ WhatsApp: Alert Sent
+              </span>
+            {% elif alert.whatsapp_status == 'failed' %}
+              <span class="tag tag-whatsapp-failed" title="{{ alert.whatsapp_detail }}">
+                ⚠️ WhatsApp: Failed ({{ alert.whatsapp_detail }})
+              </span>
+            {% else %}
+              <span class="tag tag-whatsapp-off" title="WhatsApp Cloud API credentials not configured in .env">
+                ⚪ WhatsApp: Not Configured
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- Grouped Audio Player (INMP441 Microphone) -->
+          <section class="audio-section">
+            <div class="audio-header">
+              <span>🎙️ INMP441 Audio Recording (~5s WAV)</span>
+              {% if alert.audio_url or alert.audio_filename %}
+                {% set audio_src = alert.audio_url if alert.audio_url else url_for('serve_upload', filename=alert.audio_filename) %}
+                <a
+                  href="{{ audio_src }}"
+                  download
+                  class="btn btn-outline btn-sm"
+                  style="font-size: 0.75rem; padding: 0.15rem 0.5rem;"
+                >
+                  ⬇️ Download WAV
+                </a>
+              {% endif %}
+            </div>
+
+            {% if alert.audio_url or alert.audio_filename %}
+              {% set audio_src = alert.audio_url if alert.audio_url else url_for('serve_upload', filename=alert.audio_filename) %}
+              <div class="audio-player-wrap">
+                <audio controls preload="none">
+                  <source src="{{ audio_src }}" type="audio/wav">
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            {% else %}
+              <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">
+                No audio recording was attached to this alert.
+              </p>
+            {% endif %}
+          </section>
+
+          <!-- Grouped Photos (AI-Thinker ESP32-CAM) -->
+          <section class="photos-section">
+            <div class="photo-section-title">
+              📷 ESP32-CAM Photos ({{ alert.photos|length }} captured)
+            </div>
+
+            {% if alert.photos %}
+              <div class="photos-grid">
+                {% for photo in alert.photos %}
+                  {% set photo_src = photo.file_url if (photo is mapping and photo.file_url) else url_for('serve_upload', filename=(photo.filename if photo is mapping else photo)) %}
+                  <div class="photo-item" title="Click to view full photo">
+                    <img
+                      src="{{ photo_src }}"
+                      alt="Alert Photo {{ loop.index }} for Alert #{{ alert.id }}"
+                      loading="lazy"
+                    >
+                    <span class="photo-index-tag">Photo {{ loop.index }} of {{ alert.photos|length }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">
+                No photos were attached to this alert.
+              </p>
+            {% endif %}
+          </section>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <!-- Empty State Card -->
+  <div class="empty-state">
+    <div class="empty-state-icon">🛡️</div>
+    <h3>No alerts yet</h3>
+    <p>
+      The system is standing by and monitoring. When the hardware pushbutton is triggered on your ESP32-CAM device, captured photos and audio recordings will appear here automatically.
+    </p>
+    <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-sm">Refresh</a>
+    </div>
+  </div>
+{% endif %}
+
+<!-- Lightbox Modal for Full-Size Image Inspection -->
+<div id="photo-lightbox" class="lightbox" aria-hidden="true" role="dialog" aria-label="Photo Viewer">
+  <button id="lightbox-close" class="lightbox-close" aria-label="Close photo preview">&times;</button>
+  <img id="lightbox-img" class="lightbox-content" src="" alt="Enlarged photo preview">
+</div>
+{% endblock %}
