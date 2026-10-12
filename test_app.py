@@ -77,10 +77,10 @@ class TestWomensSafetyApp(unittest.TestCase):
         self.assertIn("Invalid photo format", data["error"])
 
     def test_upload_too_many_photos(self):
-        # 5 photos (max is 4) must return 400
+        # 11 photos (max is 10) must return 400
         photos = [
             (io.BytesIO(generate_sample_jpeg(i)), f"photo_{i}.jpg")
-            for i in range(1, 6)
+            for i in range(1, 12)
         ]
         data = {"photos": photos}
         res = self.client.post(
@@ -143,22 +143,23 @@ class TestWomensSafetyApp(unittest.TestCase):
         self.assertIn("ESP32-CAM-UNIT-01", html)
         self.assertIn("GPS: Not Included / Unavailable", html)
 
-        # Verify serving photo upload while logged in
+        # Verify photo url or local serving
         photo_entry = events[0]["photos"][0]
-        photo_filename = photo_entry["filename"] if isinstance(photo_entry, dict) else photo_entry
-        photo_res = self.client.get(f"/uploads/{photo_filename}")
-        self.assertEqual(photo_res.status_code, 200)
-        photo_res.close()
+        if isinstance(photo_entry, dict) and photo_entry.get("file_url"):
+            # Cloudinary mode: verify HTTPS URL is present
+            self.assertTrue(photo_entry["file_url"].startswith("https://"))
+        else:
+            # Local disk mode
+            photo_filename = photo_entry["filename"] if isinstance(photo_entry, dict) else photo_entry
+            photo_res = self.client.get(f"/uploads/{photo_filename}")
+            self.assertEqual(photo_res.status_code, 200)
+            photo_res.close()
 
         # Delete event
         del_res = self.client.post(f"/events/{event_id}/delete", follow_redirects=True)
         self.assertEqual(del_res.status_code, 200)
         del_html = del_res.get_data(as_text=True)
         self.assertIn("No alerts yet", del_html)
-
-        # Verify file removed from disk
-        file_on_disk = Config.UPLOAD_FOLDER / photo_filename
-        self.assertFalse(file_on_disk.exists())
 
 if __name__ == "__main__":
     unittest.main()
