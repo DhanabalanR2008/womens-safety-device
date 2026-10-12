@@ -135,7 +135,7 @@
           <!-- Grouped Audio Player (INMP441 Microphone) -->
           <section class="audio-section">
             <div class="audio-header">
-              <span>🎙️ INMP441 Audio Recording (~5s WAV)</span>
+              <span>🎙️ INMP441 Audio Recording (~30s WAV)</span>
               {% if alert.audio_url or alert.audio_filename %}
                 {% set audio_src = alert.audio_url if alert.audio_url else url_for('serve_upload', filename=alert.audio_filename) %}
                 <a
