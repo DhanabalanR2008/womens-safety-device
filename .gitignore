@@ -1,0 +1,18 @@
+# Environment secrets
+.env
+.env.local
+
+# Python cache & virtual environment
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+env/
+
+# Database and uploaded media (keep folder structure via .gitkeep)
+*.db
+uploads/*
+!uploads/.gitkeep
+sample_data/*.jpg
+sample_data/*.wav
