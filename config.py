@@ -24,8 +24,8 @@ class Config:
     FLASK_PORT = int(os.environ.get("FLASK_PORT", 5000))
     BASE_URL = os.environ.get("BASE_URL", f"http://localhost:{FLASK_PORT}")
 
-    # Maximum file upload size: 25 MB
-    MAX_CONTENT_LENGTH = 25 * 1024 * 1024
+    # Maximum file upload size: 50 MB
+    MAX_CONTENT_LENGTH = 50 * 1024 * 1024
 
     # File extensions
     ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg"}
