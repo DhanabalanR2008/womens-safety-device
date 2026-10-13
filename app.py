@@ -126,7 +126,7 @@ def dashboard():
         events=events,
         whatsapp_active=whatsapp_active,
         cloudinary_active=cloudinary_active,
-        whatsapp_recipient=Config.WHATSAPP_RECIPIENT_PHONE_NUMBER if whatsapp_active else None,
+        whatsapp_recipient=(Config.TWILIO_WHATSAPP_TO or Config.WHATSAPP_RECIPIENT_PHONE_NUMBER) if whatsapp_active else None,
     )
 
 
