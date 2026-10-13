@@ -165,6 +165,40 @@ def health_check():
     }), 200
 
 
+@app.route("/api/twilio-webhook", methods=["GET", "POST"])
+def twilio_webhook():
+    """
+    Custom Webhook for Twilio WhatsApp Sandbox / Tryout UI.
+    Returns a TwiML XML response with the latest emergency alert details
+    and the live dashboard link.
+    """
+    events = get_all_events()
+    if events:
+        latest = events[0]
+        photo_count = len(latest.get("photos", []))
+        has_audio = bool(latest.get("audio_url") or latest.get("audio_filename"))
+        msg_text = (
+            f"🚨 EMERGENCY ALERT: Women's Safety Device!\n\n"
+            f"• Latest Alert: #{latest['id']}\n"
+            f"• Device: {latest['device_id']}\n"
+            f"• Time: {latest['created_at'][:19].replace('T', ' ')} UTC\n"
+            f"• Photos Captured: {photo_count}\n"
+            f"• Audio Recorded: {'Yes (WAV)' if has_audio else 'None'}\n"
+            f"• GPS: Not fitted in prototype\n\n"
+            f"🔗 View Photos & Audio Live:\n{Config.BASE_URL}"
+        )
+    else:
+        msg_text = (
+            f"🛡️ Women's Safety Device Active\n\n"
+            f"No emergency alerts recorded yet.\n"
+            f"🔗 Live Dashboard:\n{Config.BASE_URL}"
+        )
+
+    twiml = f'<?xml version="1.0" encoding="UTF-8"?><Response><Message>{msg_text}</Message></Response>'
+    return app.response_class(twiml, mimetype="text/xml")
+
+
+
 @app.route("/api/events", methods=["POST"])
 def upload_event():
     """
